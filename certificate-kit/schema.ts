@@ -7,6 +7,8 @@ export type CertificateData = {
   date: string;
   issuer: string;
   note?: string;
+  projectName?: string;
+  teamName?: string;
 };
 
 export const CERT_PROTOCOL_ID: [0, string] = [0, "certificate poc"];
@@ -30,7 +32,9 @@ const CERT_FIELDS: Array<{ key: keyof CertificateData; required: boolean }> = [
   { key: "role", required: false },
   { key: "date", required: true },
   { key: "issuer", required: true },
-  { key: "note", required: false }
+  { key: "note", required: false },
+  { key: "projectName", required: false },
+  { key: "teamName", required: false }
 ];
 
 export function validateCertificate(data: Partial<CertificateData>): string | null {
@@ -61,5 +65,7 @@ export const EMPTY_CERTIFICATE: CertificateData = {
   role: "",
   date: "",
   issuer: "",
-  note: ""
+  note: "",
+  projectName: "",
+  teamName: ""
 };

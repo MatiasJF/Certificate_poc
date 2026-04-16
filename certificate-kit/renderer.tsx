@@ -21,6 +21,22 @@ export function renderCertificateSVG(data: CertificateData): string {
   const date = escapeXml(data.date || "Date");
   const issuer = escapeXml(data.issuer || "Issuer");
   const note = escapeXml(data.note || "");
+  const projectName = escapeXml(data.projectName || "");
+  const teamName = escapeXml(data.teamName || "");
+
+  const extras: string[] = [];
+  if (projectName) extras.push(`Project · ${projectName}`);
+  if (teamName) extras.push(`Team · ${teamName}`);
+  if (note) extras.push(note);
+
+  let y = 610;
+  const extrasSvg = extras
+    .map((line) => {
+      const el = `<text x="${CERT_WIDTH / 2}" y="${y}" text-anchor="middle" fill="#9aa7b8" font-family="sans-serif" font-size="22" font-style="italic">${line}</text>`;
+      y += 40;
+      return el;
+    })
+    .join("\n    ");
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${CERT_WIDTH} ${CERT_HEIGHT}" width="${CERT_WIDTH}" height="${CERT_HEIGHT}">
     <defs>
@@ -40,15 +56,15 @@ export function renderCertificateSVG(data: CertificateData): string {
 
     <text x="${CERT_WIDTH / 2}" y="180" text-anchor="middle" fill="#9aa7b8" font-family="monospace" font-size="28" letter-spacing="8">CERTIFICATE OF PARTICIPATION</text>
 
-    <text x="${CERT_WIDTH / 2}" y="310" text-anchor="middle" fill="#b8b8c0" font-family="sans-serif" font-size="28">This certifies that</text>
+    <text x="${CERT_WIDTH / 2}" y="290" text-anchor="middle" fill="#b8b8c0" font-family="sans-serif" font-size="28">This certifies that</text>
 
-    <text x="${CERT_WIDTH / 2}" y="400" text-anchor="middle" fill="#ffffff" font-family="sans-serif" font-weight="700" font-size="64">${recipient}</text>
+    <text x="${CERT_WIDTH / 2}" y="380" text-anchor="middle" fill="#ffffff" font-family="sans-serif" font-weight="700" font-size="64">${recipient}</text>
 
-    <text x="${CERT_WIDTH / 2}" y="470" text-anchor="middle" fill="#b8b8c0" font-family="sans-serif" font-size="28">${role ? `participated as ${role} in` : "participated in"}</text>
+    <text x="${CERT_WIDTH / 2}" y="450" text-anchor="middle" fill="#b8b8c0" font-family="sans-serif" font-size="28">${role ? `participated as ${role} in` : "participated in"}</text>
 
-    <text x="${CERT_WIDTH / 2}" y="550" text-anchor="middle" fill="#00e6ff" font-family="sans-serif" font-weight="600" font-size="44">${event}</text>
+    <text x="${CERT_WIDTH / 2}" y="540" text-anchor="middle" fill="#00e6ff" font-family="sans-serif" font-weight="600" font-size="44">${event}</text>
 
-    ${note ? `<text x="${CERT_WIDTH / 2}" y="620" text-anchor="middle" fill="#9aa7b8" font-family="sans-serif" font-size="22" font-style="italic">${note}</text>` : ""}
+    ${extrasSvg}
 
     <text x="120" y="${CERT_HEIGHT - 110}" fill="#9aa7b8" font-family="monospace" font-size="20">ISSUED BY</text>
     <text x="120" y="${CERT_HEIGHT - 80}" fill="#ffffff" font-family="sans-serif" font-size="26">${issuer}</text>

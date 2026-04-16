@@ -21,6 +21,8 @@ const FIELDS: Field[] = [
   { key: "role", label: "Role", placeholder: "Builder / Judge / Mentor" },
   { key: "date", label: "Date", required: true, type: "date" },
   { key: "issuer", label: "Issuer", required: true, placeholder: "BSV Association" },
+  { key: "projectName", label: "Project", placeholder: "Optional project name" },
+  { key: "teamName", label: "Team", placeholder: "Optional team name" },
   { key: "note", label: "Note", placeholder: "Optional dedication" }
 ];
 
