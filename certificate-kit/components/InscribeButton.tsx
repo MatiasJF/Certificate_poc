@@ -2,15 +2,21 @@
 
 import { useState } from "react";
 import { WalletClient } from "@bsv/sdk";
-import { CertificateData, validateCertificate } from "../schema";
+import { CertificateData, CertificateMetadata, validateCertificate } from "../schema";
 import { renderCertificateSVG, svgToBytes } from "../renderer";
 import { inscribeCertificate } from "../inscription";
+
+export type InscribeResult = {
+  txid: string;
+  imageSha256: string;
+  metadata: CertificateMetadata;
+};
 
 type Props = {
   client: WalletClient | null;
   data: CertificateData;
   vcWrap?: unknown;
-  onIssued?: (txid: string) => void;
+  onIssued?: (result: InscribeResult) => void;
 };
 
 type Status =
@@ -43,7 +49,7 @@ export default function InscribeButton({ client, data, vcWrap, onIssued }: Props
         vcWrap
       });
       setStatus({ kind: "issued", txid: res.txid });
-      onIssued?.(res.txid);
+      onIssued?.(res);
     } catch (e) {
       setStatus({ kind: "error", message: (e as Error).message });
     }
