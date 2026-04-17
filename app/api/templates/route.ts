@@ -27,6 +27,7 @@ export async function GET(req: NextRequest) {
       thumbnailUrl: true,
       visibility: true,
       ownerAddress: true,
+      ownerPublicKey: true,
       createdAt: true,
       updatedAt: true
     }

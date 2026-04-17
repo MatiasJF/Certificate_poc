@@ -191,21 +191,28 @@ export default function TemplateEditor({ initial }: Props) {
         setError("SVG had no recognizable content.");
         return;
       }
-      const group = fabric.util.groupSVGElements(objects as FabricObject[], loaded.options);
-      group.set({
-        left: 0,
-        top: 0,
-        selectable: false,
-        evented: false,
-        excludeFromExport: false
-      });
-      (group as FieldTag).fieldKey = undefined;
-      if (loaded.options?.width && loaded.options?.height) {
-        setWidth(Math.round(loaded.options.width as number));
-        setHeight(Math.round(loaded.options.height as number));
+
+      // Resize canvas to SVG viewBox dimensions first so coords line up.
+      const opts = loaded.options as { width?: number; height?: number } | undefined;
+      if (opts?.width && opts?.height) {
+        setWidth(Math.round(opts.width));
+        setHeight(Math.round(opts.height));
+        c.setDimensions({ width: Math.round(opts.width), height: Math.round(opts.height) });
       }
-      c.add(group);
-      c.sendObjectToBack(group);
+
+      // Add each imported object directly — fabric already baked per-object
+      // transforms during loadSVGFromString. Wrapping in a Group re-applies
+      // its own transform and clips content against the canvas viewport.
+      for (const obj of objects as FabricObject[]) {
+        obj.set({
+          selectable: false,
+          evented: false,
+          excludeFromExport: false
+        });
+        (obj as FieldTag).fieldKey = undefined;
+        c.add(obj);
+        c.sendObjectToBack(obj);
+      }
       c.renderAll();
     } catch (e) {
       setError("Failed to parse SVG: " + (e as Error).message);
@@ -275,6 +282,27 @@ export default function TemplateEditor({ initial }: Props) {
 
   const updateField = (key: string, patch: Partial<TemplateField>) => {
     setFields((prev) => prev.map((f) => (f.key === key ? { ...f, ...patch } : f)));
+  };
+
+  const [deleting, setDeleting] = useState(false);
+  const deleteTemplate = async () => {
+    if (!client || !initial?.id) return;
+    if (!confirm(`Delete template "${initial.name}"? This cannot be undone.`)) return;
+    setDeleting(true);
+    setError(null);
+    try {
+      const res = await walletSignedFetch(client, `/api/templates/${initial.id}`, {
+        method: "DELETE"
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error || `Delete failed: ${res.status}`);
+      }
+      router.push("/templates");
+    } catch (e) {
+      setError((e as Error).message);
+      setDeleting(false);
+    }
   };
 
   // Visual canvas scale
@@ -383,6 +411,16 @@ export default function TemplateEditor({ initial }: Props) {
         >
           {saving ? "Saving…" : initial?.id ? "Save changes" : "Create template"}
         </button>
+        {initial?.id && (
+          <button
+            type="button"
+            onClick={deleteTemplate}
+            disabled={deleting || !client}
+            className="rounded border border-red-500/40 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-200 hover:bg-red-500/20 disabled:opacity-40"
+          >
+            {deleting ? "Deleting…" : "Delete template"}
+          </button>
+        )}
         {error && <p className="text-sm text-red-400">{error}</p>}
       </aside>
 

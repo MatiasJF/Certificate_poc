@@ -13,7 +13,7 @@ import {
   type TemplateData,
   type InscribeResult
 } from "@/certificate-kit";
-import { walletSignedFetch } from "@/certificate-kit/signed-fetch";
+import { walletSignedFetch, walletTaggedFetch } from "@/certificate-kit/signed-fetch";
 
 type UserTemplateSummary = {
   id: string;
@@ -35,11 +35,12 @@ export default function Home() {
   const [issued, setIssued] = useState<InscribeResult | null>(null);
 
   useEffect(() => {
-    fetch("/api/templates")
+    const req = client ? walletTaggedFetch(client, "/api/templates") : fetch("/api/templates");
+    req
       .then((r) => (r.ok ? r.json() : { templates: [] }))
       .then((res) => setUserTemplates(res.templates ?? []))
       .catch(() => setUserTemplates([]));
-  }, []);
+  }, [client]);
 
   const templateOptions = useMemo(
     () => [

@@ -6,6 +6,31 @@ import { canonicalJson } from "./schema";
 const PROTOCOL_ID: [0, string] = [0, "certificate template"];
 const KEY_ID = "1";
 
+export async function getTemplatePubKey(client: WalletClient): Promise<string> {
+  const { publicKey } = await client.getPublicKey({
+    protocolID: PROTOCOL_ID,
+    keyID: KEY_ID,
+    counterparty: "anyone",
+    forSelf: true
+  });
+  return publicKey;
+}
+
+export async function walletTaggedFetch(
+  client: WalletClient,
+  input: string,
+  init: RequestInit = {}
+): Promise<Response> {
+  const publicKey = await getTemplatePubKey(client);
+  return fetch(input, {
+    ...init,
+    headers: {
+      ...(init.headers ?? {}),
+      "x-wallet-pubkey": publicKey
+    }
+  });
+}
+
 export async function walletSignedFetch(
   client: WalletClient,
   input: string,

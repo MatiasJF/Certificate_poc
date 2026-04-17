@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" width="1200" height="800">
+  <defs>
+    <linearGradient id="headerGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#1B1EA9"/>
+      <stop offset="100%" stop-color="#003FFF"/>
+    </linearGradient>
+    <linearGradient id="cyanEdge" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00E6FF"/>
+      <stop offset="100%" stop-color="#003FFF"/>
+    </linearGradient>
+    <pattern id="triangles" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
+      <polygon points="0,0 60,0 0,60" fill="#00E6FF" opacity="0.16"/>
+      <polygon points="60,60 60,0 0,60" fill="#00E6FF" opacity="0.08"/>
+    </pattern>
+  </defs>
+
+  <!-- Card background -->
+  <rect width="1200" height="800" fill="#EFF0F7"/>
+  <rect x="40" y="40" width="1120" height="720" rx="18" fill="#FFFFFF" stroke="#DAE3FF" stroke-width="2"/>
+
+  <!-- BSV blue header band -->
+  <rect x="40" y="40" width="1120" height="170" rx="18" fill="url(#headerGrad)"/>
+  <rect x="40" y="190" width="1120" height="20" fill="url(#headerGrad)"/>
+
+  <!-- Triangle pattern accent (top-right) -->
+  <rect x="760" y="40" width="400" height="170" fill="url(#triangles)" rx="18"/>
+
+  <!-- Cyan side stripe -->
+  <rect x="40" y="40" width="10" height="720" rx="4" fill="url(#cyanEdge)"/>
+
+  <!-- BSVA wordmark -->
+  <g>
+    <text x="100" y="110" fill="#FFFFFF" font-family="sans-serif" font-size="34" font-weight="800" letter-spacing="2">BSVA</text>
+    <text x="100" y="140" fill="#DAE3FF" font-family="sans-serif" font-size="14" letter-spacing="6">BSV ASSOCIATION</text>
+  </g>
+
+  <!-- Certificate eyebrow + title -->
+  <text x="600" y="115" text-anchor="middle" fill="#FFFFFF" font-family="sans-serif" font-size="18" letter-spacing="10" opacity="0.9">VERIFIABLE CREDENTIAL</text>
+  <text x="600" y="170" text-anchor="middle" fill="#FFFFFF" font-family="sans-serif" font-size="44" font-weight="700">Certificate of Achievement</text>
+
+  <!-- Decorative divider under recipient area -->
+  <rect x="500" y="395" width="200" height="3" rx="1" fill="#00E6FF"/>
+
+  <!-- Footer guides -->
+  <line x1="120" y1="690" x2="380" y2="690" stroke="#DAE3FF" stroke-width="2"/>
+  <line x1="820" y1="690" x2="1080" y2="690" stroke="#DAE3FF" stroke-width="2"/>
+
+  <!-- Center seal -->
+  <g transform="translate(600 710)">
+    <circle r="40" fill="#1B1EA9"/>
+    <circle r="40" fill="none" stroke="#00E6FF" stroke-width="2"/>
+    <text y="-4" text-anchor="middle" fill="#00E6FF" font-family="monospace" font-size="10" letter-spacing="2">ON-CHAIN</text>
+    <text y="12" text-anchor="middle" fill="#FFFFFF" font-family="monospace" font-size="9" letter-spacing="2">BSV</text>
+  </g>
+</svg>
