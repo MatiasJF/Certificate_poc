@@ -1,10 +1,16 @@
 "use client";
 
-import { CertificateData } from "../schema";
-import { renderCertificateSVG } from "../renderer";
+import type { CertificateTemplate, TemplateData } from "../template";
+import { renderTemplateSVG } from "../template";
 
-export default function CertificatePreview({ data }: { data: CertificateData }) {
-  const svg = renderCertificateSVG(data);
+export default function CertificatePreview({
+  template,
+  data
+}: {
+  template: CertificateTemplate;
+  data: TemplateData;
+}) {
+  const svg = renderTemplateSVG(template, data);
   return (
     <div
       className="w-full overflow-hidden rounded-lg border border-zinc-800 shadow-lg [&>svg]:block [&>svg]:h-auto [&>svg]:w-full"

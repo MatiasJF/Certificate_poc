@@ -1,21 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { WalletClient } from "@bsv/sdk";
-import { CertificateData, CertificateMetadata, validateCertificate } from "../schema";
-import { renderCertificateSVG, svgToBytes } from "../renderer";
+import { CertificateMetadataV2 } from "../schema";
+import { svgToBytes } from "../renderer";
 import { inscribeCertificate } from "../inscription";
+import type { CertificateTemplate, TemplateData } from "../template";
+import { renderTemplateSVG, validateTemplateData } from "../template";
+import { getWalletNetwork, wocTxUrl, type WalletNetwork } from "../wallet-client";
 
 export type InscribeResult = {
   txid: string;
   imageSha256: string;
-  metadata: CertificateMetadata;
+  metadata: CertificateMetadataV2;
 };
 
 type Props = {
   client: WalletClient | null;
-  data: CertificateData;
-  vcWrap?: unknown;
+  template: CertificateTemplate;
+  data: TemplateData;
   onIssued?: (result: InscribeResult) => void;
 };
 
@@ -26,27 +29,32 @@ type Status =
   | { kind: "issued"; txid: string }
   | { kind: "error"; message: string };
 
-export default function InscribeButton({ client, data, vcWrap, onIssued }: Props) {
+export default function InscribeButton({ client, template, data, onIssued }: Props) {
   const [status, setStatus] = useState<Status>({ kind: "idle" });
+  const [network, setNetwork] = useState<WalletNetwork>("mainnet");
+
+  useEffect(() => {
+    if (!client) return;
+    getWalletNetwork(client).then(setNetwork).catch(() => setNetwork("mainnet"));
+  }, [client]);
 
   const handleInscribe = async () => {
     if (!client) {
       setStatus({ kind: "error", message: "Connect a wallet first" });
       return;
     }
-    const err = validateCertificate(data);
+    const err = validateTemplateData(template, data);
     if (err) {
       setStatus({ kind: "error", message: err });
       return;
     }
     try {
       setStatus({ kind: "rendering" });
-      const svg = renderCertificateSVG(data);
+      const svg = renderTemplateSVG(template, data);
       const bytes = svgToBytes(svg);
       setStatus({ kind: "signing" });
-      const res = await inscribeCertificate(client, data, bytes, {
-        contentType: "image/svg+xml",
-        vcWrap
+      const res = await inscribeCertificate(client, template, data, bytes, {
+        contentType: "image/svg+xml"
       });
       setStatus({ kind: "issued", txid: res.txid });
       onIssued?.(res);
@@ -67,7 +75,8 @@ export default function InscribeButton({ client, data, vcWrap, onIssued }: Props
       >
         {status.kind === "rendering" && "Rendering image…"}
         {status.kind === "signing" && "Awaiting wallet signature…"}
-        {(status.kind === "idle" || status.kind === "issued" || status.kind === "error") && "Inscribe certificate on-chain"}
+        {(status.kind === "idle" || status.kind === "issued" || status.kind === "error") &&
+          "Inscribe certificate on-chain"}
       </button>
 
       {status.kind === "issued" && (
@@ -77,11 +86,11 @@ export default function InscribeButton({ client, data, vcWrap, onIssued }: Props
           <div className="mt-2 flex flex-wrap gap-3 text-xs">
             <a
               className="text-cyan-300 hover:underline"
-              href={`https://whatsonchain.com/tx/${status.txid}`}
+              href={wocTxUrl(status.txid, network)}
               target="_blank"
               rel="noreferrer"
             >
-              Open on WhatsOnChain →
+              Open on WhatsOnChain ({network}) →
             </a>
             <a className="text-cyan-300 hover:underline" href={`/verify/${status.txid}`}>
               Verify →

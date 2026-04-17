@@ -18,7 +18,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </a>
             <nav className="text-sm text-zinc-400">
               <a href="/" className="mr-6 hover:text-zinc-100">Generate</a>
-              <a href="/verify" className="hover:text-zinc-100">Verify</a>
+              <a href="/templates" className="mr-6 hover:text-zinc-100">Templates</a>
+              <a href="/credentials" className="mr-6 hover:text-zinc-100">Credentials</a>
+              <a href="/verify" className="mr-6 hover:text-zinc-100">Verify</a>
+              <a href="/admin/stuck" className="text-zinc-500 hover:text-zinc-200">Debug</a>
             </nav>
           </header>
           {children}

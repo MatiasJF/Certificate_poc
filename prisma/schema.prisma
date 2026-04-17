@@ -1,0 +1,55 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TemplateVisibility {
+  PRIVATE
+  PUBLIC
+}
+
+model Template {
+  id             String             @id @default(cuid())
+  name           String
+  description    String?
+  ownerAddress   String
+  ownerPublicKey String?
+  fabricJson     Json
+  svgTemplate    String             @db.Text
+  svgBackground  String?            @db.Text
+  width          Int                @default(1200)
+  height         Int                @default(800)
+  fieldSchema    Json
+  visibility     TemplateVisibility @default(PRIVATE)
+  publishedTxid  String?
+  thumbnailUrl   String?            @db.Text
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  certificates Certificate[]
+
+  @@index([ownerAddress])
+  @@index([visibility])
+}
+
+model Certificate {
+  id             String   @id @default(cuid())
+  txid           String   @unique
+  templateId     String?
+  issuerAddress  String
+  issuerPubKey   String?
+  recipientData  Json
+  imageSha256    String
+  schemaVersion  String   @default("certificate/v2")
+  issuedAt       DateTime @default(now())
+
+  template Template? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+
+  @@index([issuerAddress])
+  @@index([templateId])
+}

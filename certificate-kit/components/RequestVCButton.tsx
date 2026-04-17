@@ -1,11 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { CertificateData, validateCertificate } from "../schema";
-import { acquireAttendanceVC, AcquiredVC } from "../vc-client";
+import { acquireCertificateVC, type AcquiredVC } from "../vc-client";
+import type { CertificateTemplate, TemplateData } from "../template";
 
 type Props = {
-  data: CertificateData;
+  template: CertificateTemplate;
+  data: TemplateData;
+  txid?: string;
+  imageSha256?: string;
+  issuedAt?: string;
   serverUrl?: string;
   onAcquired?: (vc: AcquiredVC) => void;
 };
@@ -16,18 +20,32 @@ type Status =
   | { kind: "acquired"; vc: AcquiredVC }
   | { kind: "error"; message: string };
 
-export default function RequestVCButton({ data, serverUrl = "/api/credential-issuer", onAcquired }: Props) {
+export default function RequestVCButton({
+  template,
+  data,
+  txid,
+  imageSha256,
+  issuedAt,
+  serverUrl = "/api/credential-issuer",
+  onAcquired
+}: Props) {
   const [status, setStatus] = useState<Status>({ kind: "idle" });
+  const ready = !!txid && !!imageSha256 && !!issuedAt;
 
   const handle = async () => {
-    const err = validateCertificate(data);
-    if (err) {
-      setStatus({ kind: "error", message: err });
+    if (!ready) {
+      setStatus({ kind: "error", message: "Inscribe the certificate first to bind the VC to its txid" });
       return;
     }
     setStatus({ kind: "requesting" });
     try {
-      const vc = await acquireAttendanceVC(serverUrl, data);
+      const vc = await acquireCertificateVC(serverUrl, {
+        template,
+        data,
+        txid: txid!,
+        imageSha256: imageSha256!,
+        issuedAt: issuedAt!
+      });
       setStatus({ kind: "acquired", vc });
       onAcquired?.(vc);
     } catch (e) {
@@ -40,7 +58,7 @@ export default function RequestVCButton({ data, serverUrl = "/api/credential-iss
       <button
         type="button"
         onClick={handle}
-        disabled={status.kind === "requesting"}
+        disabled={!ready || status.kind === "requesting"}
         className="rounded border border-fuchsia-400/60 bg-fuchsia-500/10 px-4 py-2 font-semibold text-fuchsia-200 hover:bg-fuchsia-500/20 disabled:opacity-40"
       >
         {status.kind === "requesting" ? "Requesting VC from issuer…" : "Acquire Verifiable Credential"}
@@ -49,7 +67,7 @@ export default function RequestVCButton({ data, serverUrl = "/api/credential-iss
       {status.kind === "acquired" && (
         <div className="rounded border border-fuchsia-400/40 bg-fuchsia-500/10 p-3 text-sm text-fuchsia-100">
           <div className="font-semibold text-fuchsia-200">VC acquired and saved to wallet</div>
-          <pre className="mt-2 overflow-auto whitespace-pre-wrap break-all text-xs text-fuchsia-50/90">
+          <pre className="mt-2 max-h-60 overflow-auto whitespace-pre-wrap break-all text-xs text-fuchsia-50/90">
             {JSON.stringify(status.vc, null, 2)}
           </pre>
         </div>
@@ -58,8 +76,8 @@ export default function RequestVCButton({ data, serverUrl = "/api/credential-iss
       {status.kind === "error" && <p className="text-sm text-red-400">{status.message}</p>}
 
       <p className="text-xs text-zinc-500">
-        Issued by the server-side <code>aph-attendance</code> credential issuer (BRC-52) and stored in your
-        BRC-100 wallet. This is the path the hackathon web will use to deliver credentials to verified attendees.
+        The VC binds to the on-chain certificate via <code>certificateTxid</code>, so anyone with the VC can
+        resolve back to the inscription.
       </p>
     </div>
   );
