@@ -34,7 +34,10 @@ export default function VerifyPanel({ result }: { result: VerifyResult }) {
     <div className="grid gap-6">
       <div className="grid gap-2 rounded border border-zinc-800 bg-zinc-900/50 p-4 text-sm">
         <div className="font-mono text-xs text-zinc-400 break-all">{result.txid}</div>
-        <Check ok={result.onChain} label="Transaction present on chain" />
+        <Check
+          ok={result.onChain}
+          label={`Transaction present on chain${result.network ? ` (${result.network})` : ""}`}
+        />
         {meta && (
           <>
             <Check ok={result.signatureValid} label="Issuer signature valid" />

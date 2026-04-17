@@ -21,7 +21,8 @@ export async function walletSignedFetch(
   const { publicKey } = await client.getPublicKey({
     protocolID: PROTOCOL_ID,
     keyID: KEY_ID,
-    counterparty: "anyone"
+    counterparty: "anyone",
+    forSelf: true
   });
   const sig = await client.createSignature({
     data: Utils.toArray(message, "utf8"),

@@ -80,14 +80,18 @@ export function validateCertificate(data: Partial<CertificateData>): string | nu
 }
 
 export function canonicalJson(obj: unknown): string {
+  if (obj === undefined) return "null";
   if (obj === null || typeof obj !== "object") return JSON.stringify(obj);
-  if (Array.isArray(obj)) return "[" + obj.map(canonicalJson).join(",") + "]";
-  const keys = Object.keys(obj as Record<string, unknown>).sort();
+  if (Array.isArray(obj)) {
+    return "[" + obj.map((v) => (v === undefined ? "null" : canonicalJson(v))).join(",") + "]";
+  }
+  const entries = Object.entries(obj as Record<string, unknown>).filter(
+    ([, v]) => v !== undefined
+  );
+  entries.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
   return (
     "{" +
-    keys
-      .map((k) => JSON.stringify(k) + ":" + canonicalJson((obj as Record<string, unknown>)[k]))
-      .join(",") +
+    entries.map(([k, v]) => JSON.stringify(k) + ":" + canonicalJson(v)).join(",") +
     "}"
   );
 }

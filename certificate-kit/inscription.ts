@@ -123,7 +123,10 @@ export async function inscribeCertificate(
         outputDescription: "Certificate metadata"
       }
     ],
-    labels: ["certificate", template.id]
+    labels: ["certificate", template.id],
+    options: {
+      acceptDelayedBroadcast: false
+    }
   });
 
   if (!result.txid) throw new Error("Wallet did not return a txid (action may still be pending approval)");

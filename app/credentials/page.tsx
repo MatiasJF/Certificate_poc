@@ -99,7 +99,7 @@ export default function CredentialsPage() {
     if (!client) return;
     setLoadingVcs(true);
     setVcError(null);
-    listCertificateVCs()
+    listCertificateVCs(client)
       .then((list) => {
         const parsed = list.map(parseVC).filter((v): v is VCView => !!v);
         setVcs(parsed);

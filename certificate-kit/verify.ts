@@ -8,9 +8,12 @@ import {
 
 const WOC_BASE = process.env.WOC_BASE_URL || "https://api.whatsonchain.com";
 
+export type VerifyNetwork = "mainnet" | "testnet";
+
 export type VerifyResult = {
   txid: string;
   onChain: boolean;
+  network?: VerifyNetwork;
   imageBytes?: Uint8Array;
   imageContentType?: string;
   metadata?: CertificateMetadata;
@@ -19,12 +22,29 @@ export type VerifyResult = {
   errors: string[];
 };
 
-async function fetchTxHex(txid: string): Promise<string | null> {
-  const res = await fetch(`${WOC_BASE}/v1/bsv/main/tx/${txid}/hex`, {
+async function fetchTxHexOnNetwork(
+  txid: string,
+  network: VerifyNetwork
+): Promise<string | null> {
+  const path = network === "mainnet" ? "main" : "test";
+  const res = await fetch(`${WOC_BASE}/v1/bsv/${path}/tx/${txid}/hex`, {
     next: { revalidate: 30 }
   });
   if (!res.ok) return null;
   return (await res.text()).trim();
+}
+
+async function fetchTxHex(
+  txid: string,
+  preferred?: VerifyNetwork
+): Promise<{ hex: string; network: VerifyNetwork } | null> {
+  const order: VerifyNetwork[] =
+    preferred === "testnet" ? ["testnet", "mainnet"] : ["mainnet", "testnet"];
+  for (const n of order) {
+    const hex = await fetchTxHexOnNetwork(txid, n);
+    if (hex) return { hex, network: n };
+  }
+  return null;
 }
 
 function findInscriptionInScript(
@@ -80,7 +100,10 @@ async function sha256HexNode(bytes: Uint8Array): Promise<string> {
   return Utils.toHex(hash);
 }
 
-export async function verifyCertificateTx(txid: string): Promise<VerifyResult> {
+export async function verifyCertificateTx(
+  txid: string,
+  preferredNetwork?: VerifyNetwork
+): Promise<VerifyResult> {
   const errors: string[] = [];
   const result: VerifyResult = {
     txid,
@@ -90,12 +113,14 @@ export async function verifyCertificateTx(txid: string): Promise<VerifyResult> {
     errors
   };
 
-  const hex = await fetchTxHex(txid);
-  if (!hex) {
-    errors.push("Transaction not found on WhatsOnChain (unconfirmed or invalid txid)");
+  const fetched = await fetchTxHex(txid, preferredNetwork);
+  if (!fetched) {
+    errors.push("Transaction not found on WhatsOnChain (tried mainnet and testnet)");
     return result;
   }
+  const { hex, network } = fetched;
   result.onChain = true;
+  result.network = network;
 
   let tx: Transaction;
   try {
