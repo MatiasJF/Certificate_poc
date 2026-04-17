@@ -1,7 +1,7 @@
 "use client";
 
 import { createWallet } from "@bsv/simple/browser";
-import { CertificateData } from "./schema";
+import type { CertificateTemplate, TemplateData } from "./template";
 
 type SimpleWallet = Awaited<ReturnType<typeof createWallet>>;
 
@@ -21,17 +21,38 @@ export type AcquiredVC = {
   [k: string]: unknown;
 };
 
-export async function acquireAttendanceVC(
+export const CERT_VC_SCHEMA_ID = "certificate/v2";
+
+export type IssuerInfo = {
+  did?: string;
+  certifierPublicKey: string;
+  certificateType: string;
+  schemas: Array<{ id: string; name?: string; certificateTypeBase64: string }>;
+};
+
+export type AcquireArgs = {
+  template: CertificateTemplate;
+  data: TemplateData;
+  txid: string;
+  imageSha256: string;
+  issuedAt: string;
+};
+
+export async function acquireCertificateVC(
   serverUrl: string,
-  data: CertificateData
+  args: AcquireArgs
 ): Promise<AcquiredVC> {
   const wallet = await getSimpleWallet();
+  const { template, data, txid, imageSha256, issuedAt } = args;
   const fields: Record<string, string> = {
-    recipient: data.recipient,
-    event: data.event,
-    role: data.role ?? "",
-    date: data.date,
-    issuer: data.issuer
+    templateId: template.id,
+    templateName: template.name,
+    certificateTxid: txid,
+    imageSha256,
+    recipient: data.recipient ?? data.name ?? "",
+    issuer: data.issuer ?? "",
+    issuedAt,
+    fieldsJson: JSON.stringify(data)
   };
   const vc = await (wallet as unknown as {
     acquireCredential: (args: {
@@ -42,29 +63,44 @@ export async function acquireAttendanceVC(
     }) => Promise<AcquiredVC>;
   }).acquireCredential({
     serverUrl,
-    schemaId: "aph-attendance",
+    schemaId: CERT_VC_SCHEMA_ID,
     fields,
-    replaceExisting: true
+    replaceExisting: false
   });
   return vc;
 }
 
-export async function listAttendanceVCs(certifierPublicKey?: string): Promise<AcquiredVC[]> {
-  const wallet = await getSimpleWallet();
-  const args: { certifiers?: string[]; types?: string[] } = {};
-  if (certifierPublicKey) args.certifiers = [certifierPublicKey];
-  const list = await (wallet as unknown as {
-    listCredentials: (args: { certifiers?: string[]; types?: string[] }) => Promise<AcquiredVC[]>;
-  }).listCredentials(args);
-  return list;
-}
-
-export async function getIssuerInfo(serverUrl: string): Promise<{
-  did: string;
-  certifierPublicKey: string;
-  schemas: Array<{ id: string; name: string }>;
-}> {
+export async function getIssuerInfo(serverUrl: string): Promise<IssuerInfo> {
   const res = await fetch(`${serverUrl}?action=info`);
   if (!res.ok) throw new Error(`Issuer info failed: ${res.status}`);
   return res.json();
+}
+
+/**
+ * Lists all VCs in the connected wallet that were issued by the certificate-poc
+ * issuer, across all registered schema types.
+ */
+export async function listCertificateVCs(
+  serverUrl: string = "/api/credential-issuer"
+): Promise<AcquiredVC[]> {
+  const info = await getIssuerInfo(serverUrl);
+  const types = (info.schemas ?? [])
+    .map((s) => s.certificateTypeBase64)
+    .filter((t): t is string => typeof t === "string" && t.length > 0);
+
+  if (types.length === 0) return [];
+
+  const wallet = await getSimpleWallet();
+  const list = await (wallet as unknown as {
+    listCredentials: (args: {
+      certifiers: string[];
+      types: string[];
+      limit?: number;
+    }) => Promise<AcquiredVC[]>;
+  }).listCredentials({
+    certifiers: [info.certifierPublicKey],
+    types,
+    limit: 200
+  });
+  return list ?? [];
 }

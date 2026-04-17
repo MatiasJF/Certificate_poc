@@ -1,5 +1,10 @@
 import { Transaction, PublicKey, Signature, Hash, Utils } from "@bsv/sdk";
-import { CertificateMetadata, CERT_SCHEMA_ID, canonicalJson } from "./schema";
+import {
+  CertificateMetadata,
+  CERT_SCHEMA_ID_V1,
+  CERT_SCHEMA_ID_V2,
+  canonicalJson
+} from "./schema";
 
 const WOC_BASE = process.env.WOC_BASE_URL || "https://api.whatsonchain.com";
 
@@ -11,7 +16,6 @@ export type VerifyResult = {
   metadata?: CertificateMetadata;
   signatureValid: boolean;
   imageHashMatches: boolean;
-  vcValid?: boolean;
   errors: string[];
 };
 
@@ -23,7 +27,9 @@ async function fetchTxHex(txid: string): Promise<string | null> {
   return (await res.text()).trim();
 }
 
-function findInscriptionInScript(chunks: Array<{ op?: number; data?: number[] }>): { contentType: string; body: Uint8Array } | null {
+function findInscriptionInScript(
+  chunks: Array<{ op?: number; data?: number[] }>
+): { contentType: string; body: Uint8Array } | null {
   for (let i = 0; i < chunks.length - 5; i++) {
     const c = chunks[i];
     const next = chunks[i + 1];
@@ -43,7 +49,9 @@ function findInscriptionInScript(chunks: Array<{ op?: number; data?: number[] }>
   return null;
 }
 
-function findJsonMetadataInScript(chunks: Array<{ op?: number; data?: number[] }>): CertificateMetadata | null {
+function findJsonMetadataInScript(
+  chunks: Array<{ op?: number; data?: number[] }>
+): CertificateMetadata | null {
   for (let i = 0; i < chunks.length - 2; i++) {
     if (chunks[i]?.op !== 0x00) continue;
     if (chunks[i + 1]?.op !== 0x6a) continue;
@@ -51,7 +59,9 @@ function findJsonMetadataInScript(chunks: Array<{ op?: number; data?: number[] }
     if (!payload) continue;
     try {
       const obj = JSON.parse(Utils.toUTF8(payload));
-      if (obj && obj.schema === CERT_SCHEMA_ID) return obj as CertificateMetadata;
+      if (obj && (obj.schema === CERT_SCHEMA_ID_V1 || obj.schema === CERT_SCHEMA_ID_V2)) {
+        return obj as CertificateMetadata;
+      }
     } catch {
       // keep scanning
     }

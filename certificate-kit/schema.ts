@@ -1,4 +1,11 @@
-export const CERT_SCHEMA_ID = "aph-certificate/v1" as const;
+export const CERT_SCHEMA_ID_V1 = "aph-certificate/v1" as const;
+export const CERT_SCHEMA_ID_V2 = "certificate/v2" as const;
+export const CERT_SCHEMA_ID = CERT_SCHEMA_ID_V2;
+
+export const CERT_PROTOCOL_ID: [0, string] = [0, "certificate poc"];
+export const CERT_KEY_ID = "1";
+
+// ---- Legacy v1 types (for backwards-compatible verification) ----
 
 export type CertificateData = {
   recipient: string;
@@ -11,12 +18,9 @@ export type CertificateData = {
   teamName?: string;
 };
 
-export const CERT_PROTOCOL_ID: [0, string] = [0, "certificate poc"];
-export const CERT_KEY_ID = "1";
-
-export type CertificateMetadata = {
+export type CertificateMetadataV1 = {
   v: 1;
-  schema: typeof CERT_SCHEMA_ID;
+  schema: typeof CERT_SCHEMA_ID_V1;
   cert: CertificateData;
   issuedAt: string;
   issuerIdentityKey: string;
@@ -26,7 +30,36 @@ export type CertificateMetadata = {
   vcWrap?: unknown;
 };
 
-const CERT_FIELDS: Array<{ key: keyof CertificateData; required: boolean }> = [
+// ---- v2: template-driven, multi-tenant ----
+
+export type TemplateRef = {
+  id: string;
+  name?: string;
+  txid?: string;
+  sha256?: string;
+};
+
+export type CertificateMetadataV2 = {
+  v: 2;
+  schema: typeof CERT_SCHEMA_ID_V2;
+  template: TemplateRef;
+  fields: Record<string, string>;
+  issuedAt: string;
+  issuerIdentityKey: string;
+  issuerPubKey: string;
+  signature: string;
+  imageSha256: string;
+};
+
+export type CertificateMetadata = CertificateMetadataV1 | CertificateMetadataV2;
+
+export function isV2Metadata(m: CertificateMetadata): m is CertificateMetadataV2 {
+  return m.schema === CERT_SCHEMA_ID_V2;
+}
+
+// ---- Validation (v1 legacy; v2 validation lives in template.ts) ----
+
+const CERT_FIELDS_V1: Array<{ key: keyof CertificateData; required: boolean }> = [
   { key: "recipient", required: true },
   { key: "event", required: true },
   { key: "role", required: false },
@@ -38,7 +71,7 @@ const CERT_FIELDS: Array<{ key: keyof CertificateData; required: boolean }> = [
 ];
 
 export function validateCertificate(data: Partial<CertificateData>): string | null {
-  for (const { key, required } of CERT_FIELDS) {
+  for (const { key, required } of CERT_FIELDS_V1) {
     const val = data[key];
     if (required && (!val || !val.trim())) return `Missing required field: ${key}`;
     if (val && val.length > 500) return `Field too long: ${key}`;
